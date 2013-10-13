@@ -29,12 +29,6 @@ describe(@"MagicMP", ^{
             [mp stopAdvertisingPeer];
         });
         
-        it(@"should delete all peers", ^{
-            [[theValue(mp.peers.count) should] equal:theValue(0)];
-        });
-        it(@"should clean the session", ^{
-            [[mp.advertiserSession should] beNil];
-        });
         it(@"shouldn't have MCNearbyServiceAdvertiser (stopped) ", ^{
             [[mp.advertiserEntity should] beNil];
         });
@@ -43,28 +37,32 @@ describe(@"MagicMP", ^{
         __block MCPeerID *peer;
         __block NSDictionary *discoveryInfo;
         __block NSString *serviceType;
+        __block MagicMP *mp=[MagicMP sharedMP];
         beforeEach(^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             discoveryInfo=@{@"Evironment":@"Test",@"DeviceType":@"iPhone"};
             serviceType=@"DataTransfer";
+            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+                return NO;
+            } andError:^(NSError *error) {
+            }];
+
         });
         
         afterEach(^{
-            [(MagicMP*)[MagicMP sharedMP] stopAdvertisingPeer];
+            [mp stopAdvertisingPeer];
         });
         
         it(@"should return shared instance",^{
-            [[[MagicMP sharedMP] should] beNonNil];
+            [[mp should] beNonNil];
         });
-        it(@"should have no peers",^{
-            [[theValue([[[MagicMP sharedMP] peers] count]) should] equal:theValue(0)];
-        });
+        
         it(@"should be the delegate of MCSession",^{
-            [[(id)[[[MagicMP sharedMP] advertiserSession] delegate] should] equal:[MagicMP sharedMP]];
+            [[(NSObject*)mp.advertiserEntity.delegate should] equal:mp];
         });
         it(@"should return error if serviceType is higher than 15 characters", ^{
             serviceType=@"HeeeeeeeeyyIamATestUserAham!";
-            BOOL started=[[MagicMP sharedMP] startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            BOOL started=[mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:^(NSError *error) {
             }];
@@ -72,51 +70,35 @@ describe(@"MagicMP", ^{
         });
         it(@"should return error if there's no peer id", ^{
             peer=nil;
-            BOOL started=[[MagicMP sharedMP] startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            BOOL started=[mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:^(NSError *error) {
             }];
             [[theValue(started) should] equal:theValue(NO)];
         });
         it(@"should not initialized if there's no error block passed",^{
-            [[MagicMP sharedMP] startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:nil];
             [[[[MagicMP sharedMP] advertiserEntity] should] beNil];
         });
         
         it(@"should not initialized if there's no invitation block passed",^{
-            [[MagicMP sharedMP] startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:nil andError:nil];
+            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:nil andError:nil];
             [[[[MagicMP sharedMP] advertiserEntity] should] beNil];
         });
         
         it(@"should have an advertiserEntity ready to start adverstising",^{
-            [[MagicMP sharedMP] startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
-                return NO;
-            } andError:^(NSError *error) {
-            }];
-            [[[[MagicMP sharedMP] advertiserEntity] should]    beNonNil];
+            [[[mp advertiserEntity] should]    beNonNil];
         });
         
         it(@"MagicMP should be the delegate of advertiserEntity",^{
-            MagicMP *mp = [MagicMP sharedMP];
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
-                return NO;
-            } andError:^(NSError *error) {
-                
-            }];
             [[(NSObject*)mp.advertiserEntity.delegate should] equal:mp];
         });
         
         it(@"MagicMP should have a session Opened",^{
-            MagicMP *mp = [MagicMP sharedMP];
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
-                return NO;
-            } andError:^(NSError *error) {
-            }];
-            [[(NSObject*)mp.advertiserSession should] beNonNil];
+            [[(NSObject*)mp.session should] beNonNil];
         });
-        
     });
     
     context(@"when start Browsing", ^{
@@ -127,25 +109,80 @@ describe(@"MagicMP", ^{
         beforeEach(^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             serviceType=@"DataTransfer";
+            [mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+            } andErrorBlock:^(NSError *error) {
+                
+            }];
+
+        });
+        afterEach(^{
             [mp stopBrowsing];
         });
-        it(@"shoudl have no found advertisers", ^{
-           [mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
-               
-           } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
-               
-           } andErrorBlock:^(NSError *error) {
-               
-           }];
+        
+        it(@"should give error if there's no peer to invite", ^{
+            BOOL success=[mp invitePeer:nil withContext:[@"TestContext" dataUsingEncoding:NSUTF8StringEncoding] timeout:20];
+            [[theValue(success) should] equal:theValue(NO)];
+        });
+        it(@"should give error if there's no context", ^{
+            BOOL success=[mp invitePeer:[[MCPeerID alloc] initWithDisplayName:@"testPeer"] withContext:nil timeout:20];
+            [[theValue(success) should] equal:theValue(NO)];
+        });
+
+        it(@"should have no found advertisers", ^{
+            [[theValue(mp.foundAdvertisers.count) should] equal:theValue(0)];
+        });
+        it(@"should fail if no UserFound block given",^{
+            BOOL started=[mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:nil UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+            } andErrorBlock:^(NSError *error) {
+                
+            }];
+            [[theValue(started) should] equal:theValue(NO)];
         });
         
+        it(@"should fail if no userLost block given",^{
+            BOOL started=[mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            } UserLost:nil andErrorBlock:^(NSError *error) {
+                
+            }];
+            [[theValue(started) should] equal:theValue(NO)];
+        });
+        
+        it(@"should fail if no peer given",^{
+            BOOL started=[mp startBrowsingWithPeer:nil serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+            } andErrorBlock:^(NSError *error) {
+                
+            }];
+            [[theValue(started) should] equal:theValue(NO)];
+        });
+        
+        it(@"should have a browser entity valid", ^{
+            [[mp.browserEntity should] beNonNil];
+        });
         
     });
     context(@"when stop Browsing", ^{
+        __block MCPeerID *peer;
+        __block NSString *serviceType;
+        __block MagicMP *mp = [MagicMP sharedMP];
+        
+        beforeEach(^{
+            peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
+            serviceType=@"DataTransfer";
+            [mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+            } andErrorBlock:^(NSError *error) {
+                
+            }];
+            [mp stopBrowsing];
+        });
        it(@"should have no browserEntity after stop browsing", ^{
-           [[MagicMP sharedMP] stopBrowsing];
-           [[[MagicMP sharedMP] browserEntity] shouldBeNil];
+           [[mp browserEntity] shouldBeNil];
        });
+        it(@"should have no advertisers found", ^{
+            [[theValue(mp.foundAdvertisers.count) should] equal:theValue(0)];
+        });
     });
 });
 

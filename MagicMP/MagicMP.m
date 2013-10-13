@@ -25,14 +25,92 @@
     dispatch_once(&onceToken, ^{
         sharedMP = [[self alloc] init];
     });
+    
     return sharedMP;
 }
+
++(id)sharedMPWithSession:(MCSession*)session{
+    static MagicMP *sharedMP = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedMP = [[self alloc] init];
+    });
+    
+    //Generating the session
+    sharedMP.session=session;
+    return sharedMP;
+}
+-(id)initWithSession:(MCSession*)session{
+    self=[super init];
+    if(self){
+        self.session=session;
+    }
+    return self;
+}
+#pragma mark - Session
+-(MCSession*)session{
+    if(!_session)_session=[[MCSession alloc] initWithPeer:[[MCPeerID alloc] initWithDisplayName:@"MagicMPeer"]];
+    _session.delegate=self;
+    return _session;
+}
+
 #pragma mark - Browser
+
 -(BOOL)startBrowsingWithPeer:(MCPeerID*)peer serviceType:(NSString*)serviceType withUserFound:(userFoundBlock)userFound UserLost:(userLostBlock)userLost andErrorBlock:(errorBlock)errorBlock{
+
+    //Stopping the current browserEntity
+    [self stopBrowsing];
+    
+    //Detecting if there's no error block
+    if(!errorBlock){
+        NSLog(@"MagicMP: Error block required");
+        return NO;
+    }
+    _errorBlock=errorBlock;
+    
+    //Detecting if there's no userFound block
+    if(!userFound){
+        NSLog(@"MagicMP: Invitation userFound block required");
+        return NO;
+    }
+    _userFoundBlock=userFound;
+    
+    //Detecting if there's no userLost block
+    if(!userLost){
+        NSLog(@"MagicMP: Invitation userLost block required");
+        return NO;
+    }
+    _userLostBlock=userLost;
+    
+    //Detecting if the serviceType length is less than 15 characters
+    if (serviceType.length>15){
+        errorBlock([NSError errorWithDomain:@"serviceType length should be 1-15 characters" code:1 userInfo:nil]);
+        return NO;
+    }
+    
+    //Detecting if there's peerID
+    if(!peer){
+        errorBlock([NSError errorWithDomain:@"PeerID cannot be nil" code:1 userInfo:nil]);
+        return NO;
+    }
+    
+    //Initializing browser entity
+    _browserEntity = [[MCNearbyServiceBrowser alloc] initWithPeer:peer serviceType:serviceType];
+    
+    //Setting delegate
+    _browserEntity.delegate=self;
+    
+    [self.browserEntity startBrowsingForPeers];
     
     return YES;
 }
 -(BOOL)stopBrowsing{
+    // Stopping browsingEntity
+    [self.browserEntity stopBrowsingForPeers];
+    self.browserEntity=nil;
+
+    // Cleaning foundAdvertisersArray
+    self.foundAdvertisers=nil;
     
     return YES;
 }
@@ -40,8 +118,50 @@
     if(!_foundAdvertisers)_foundAdvertisers=[NSMutableArray new];
     return _foundAdvertisers;
 }
+-(BOOL)invitePeer:(MCPeerID*)peer withContext:(NSData*)context timeout:(NSTimeInterval)timeout{
+    //Detecting if there's user
+    if(!peer){
+        NSLog(@"MagicMP: No peer given to invite");
+        return NO;
+    }
+    
+    //Detecting if there's context
+    if(!context){
+        NSLog(@"MagicMP: No context given to invite");
+        return NO;
+    }
+    
+    if(!self.browserEntity || !self.session){
+        return NO;
+    }
+    [self.browserEntity invitePeer:peer toSession:self.session withContext:context timeout:timeout];
+    return YES;
+}
+#pragma mark - MCNearbyBrowserDelegate
+- (void)browser:(MCNearbyServiceBrowser *)browser foundPeer:(MCPeerID *)peerID withDiscoveryInfo:(NSDictionary *)info{
+    if(self.userFoundBlock && [browser isEqual:self.browserEntity]){
+        self.userFoundBlock(peerID,browser,info);
+        
+        //Adding user to array
+        [self.foundAdvertisers addObject:peerID];
+    }
+}
+- (void)browser:(MCNearbyServiceBrowser *)browser lostPeer:(MCPeerID *)peerID{
+    if(self.userLostBlock && [browser isEqual:self.browserEntity]){
+        self.userLostBlock(peerID,browser);
+        
+        //Deleting user from array
+        [self.foundAdvertisers removeObject:peerID];
+    }
+}
+- (void)browser:(MCNearbyServiceBrowser *)browser didNotStartBrowsingForPeers:(NSError *)error{
+    if(self.errorBlock && [browser isEqual:self.browserEntity]){
+        self.errorBlock(error);
+    }
+}
 #pragma mark - Advertiser
--(BOOL)startAdvertisingWithPeer:(MCPeerID*)peer discoveryInfo:(NSDictionary*)discoveryInfo serviceType:(NSString*)servicetype withInvitationBlock:(invitationBlock)invitationBlock session:(MCSession*)session andError:(errorBlock)errorBlock{
+-(BOOL)startAdvertisingWithPeer:(MCPeerID*)peer discoveryInfo:(NSDictionary*)discoveryInfo serviceType:(NSString*)servicetype withInvitationBlock:(invitationBlock)invitationBlock andError:(errorBlock)errorBlock{
+    
     //Stopping the current advertisingEntity
     [self stopAdvertisingPeer];
     
@@ -78,41 +198,15 @@
     //Setting delegate
     _advertiserEntity.delegate=self;
     
-    //Pointing session
-    self.advertiserSession=session;
-    self.advertiserSession.delegate=self;
-
     return YES;
-}
--(BOOL)startAdvertisingWithPeer:(MCPeerID*)peer discoveryInfo:(NSDictionary*)discoveryInfo serviceType:(NSString*)servicetype withInvitationBlock:(invitationBlock)invitationBlock andError:(errorBlock)errorBlock{
-    
-    //Initializing session (because it's not passed)
-    if(!peer){
-        // Have to return because we can't init session
-        errorBlock([NSError errorWithDomain:@"PeerID cannot be nil" code:1 userInfo:nil]);
-        return NO;
-    }
-    MCSession *session = [[MCSession alloc] initWithPeer:peer securityIdentity:nil encryptionPreference:MCEncryptionOptional];
-    return [self startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:servicetype withInvitationBlock:invitationBlock session:session andError:errorBlock];
-    
 }
 -(BOOL)stopAdvertisingPeer{
-    //Cleaning the session
-    [self.advertiserSession disconnect];
-    
-    self.advertiserSession=nil;
     
     //Cleaning the advertiser
-    self.advertiserEntity = nil;
-    
-    //Deleting peers
-    self.peers=nil;
+    [self.advertiserEntity stopAdvertisingPeer];
+    self.advertiserEntity=nil;
     
     return YES;
-}
--(NSMutableArray*)peers{
-    if(!_peers)_peers=[NSMutableArray new];
-    return _peers;
 }
 
 #pragma mark - MCNearbyServiceAdvertiserDelegate
@@ -127,8 +221,33 @@
     //Calling invitabion block to get if the peer is acepted or not
     BOOL peerAccepted=self.invitationBlock(peerID,context);
     
-    if(peerAccepted){
-        
-    }
+    //Accepting connection from peer
+    invitationHandler(peerAccepted,self.session);
+}
+
+#pragma mark - MCSession Delegate
+// Remote peer changed state
+- (void)session:(MCSession *)session peer:(MCPeerID *)peerID didChangeState:(MCSessionState)state{
+    
+}
+
+// Received data from remote peer
+- (void)session:(MCSession *)session didReceiveData:(NSData *)data fromPeer:(MCPeerID *)peerID{
+    
+}
+
+// Received a byte stream from remote peer
+- (void)session:(MCSession *)session didReceiveStream:(NSInputStream *)stream withName:(NSString *)streamName fromPeer:(MCPeerID *)peerID{
+    
+}
+
+// Start receiving a resource from remote peer
+- (void)session:(MCSession *)session didStartReceivingResourceWithName:(NSString *)resourceName fromPeer:(MCPeerID *)peerID withProgress:(NSProgress *)progress{
+    
+}
+
+// Finished receiving a resource from remote peer and saved the content in a temporary location - the app is responsible for moving the file to a permanent location within its sandbox
+- (void)session:(MCSession *)session didFinishReceivingResourceWithName:(NSString *)resourceName fromPeer:(MCPeerID *)peerID atURL:(NSURL *)localURL withError:(NSError *)error{
+    
 }
 @end
