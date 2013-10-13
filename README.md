@@ -6,3 +6,5 @@ I noticed that the new MultiPeer framework introduced in iOS 7 was segmented in 
 * **MagicMP Class:** Singleton class where everything is implemented
 * **DemoProject:** Where we've implemented MagicMP. It's useful to see the implementation
 * **Unit Tests:** Module's been developed using TDD. This way if any change causes the module not to work as expected, Unit Tests will cause crash. TravisCI is connected with the repo.
+
+![image](http://www.imageshack.com/scaled/large/834/v8ww.jpg)
