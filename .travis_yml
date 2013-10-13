@@ -1,0 +1,4 @@
+language: objective-c
+
+before_install: cd DemoProject
+script: xctool -project DemoProject.xcworkspace -scheme "DemoProject" build test -sdk iphonesimulator -arch i386
