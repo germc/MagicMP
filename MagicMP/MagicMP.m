@@ -19,44 +19,42 @@
 @implementation MagicMP
 
 #pragma mark - Initializer
+-(void)setDelegate:(id)delegate andSession:(MCSession*)session{
+    self.delegate=delegate;
+    self.session=session;
+}
 +(id)sharedMP{
     static MagicMP *sharedMP = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedMP = [[self alloc] init];
     });
-    
     return sharedMP;
 }
-
-+(id)sharedMPWithSession:(MCSession*)session{
-    static MagicMP *sharedMP = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedMP = [[self alloc] init];
-    });
+-(id)initWithSession:(MCSession*)session andDelegate:(id)delegate{
+    // Returning if no delegate or session
+    if(!delegate){
+        return nil;
+    }
     
-    //Generating the session
-    sharedMP.session=session;
-    return sharedMP;
-}
--(id)initWithSession:(MCSession*)session{
     self=[super init];
     if(self){
-        self.session=session;
+        if(session)
+            self.session=session;
+        self.delegate=delegate;
     }
     return self;
 }
 #pragma mark - Session
 -(MCSession*)session{
     if(!_session)_session=[[MCSession alloc] initWithPeer:[[MCPeerID alloc] initWithDisplayName:@"MagicMPeer"]];
-    _session.delegate=self;
+    _session.delegate=self.delegate;
     return _session;
 }
 
 #pragma mark - Browser
 
--(BOOL)startBrowsingWithPeer:(MCPeerID*)peer serviceType:(NSString*)serviceType withUserFound:(userFoundBlock)userFound UserLost:(userLostBlock)userLost andErrorBlock:(errorBlock)errorBlock{
+-(BOOL)startBrowsingWithServiceType:(NSString*)serviceType withUserFound:(userFoundBlock)userFound UserLost:(userLostBlock)userLost andErrorBlock:(errorBlock)errorBlock{
 
     //Stopping the current browserEntity
     [self stopBrowsing];
@@ -88,14 +86,8 @@
         return NO;
     }
     
-    //Detecting if there's peerID
-    if(!peer){
-        errorBlock([NSError errorWithDomain:@"PeerID cannot be nil" code:1 userInfo:nil]);
-        return NO;
-    }
-    
     //Initializing browser entity
-    _browserEntity = [[MCNearbyServiceBrowser alloc] initWithPeer:peer serviceType:serviceType];
+    _browserEntity = [[MCNearbyServiceBrowser alloc] initWithPeer:self.session.myPeerID serviceType:serviceType];
     
     //Setting delegate
     _browserEntity.delegate=self;
@@ -160,7 +152,7 @@
     }
 }
 #pragma mark - Advertiser
--(BOOL)startAdvertisingWithPeer:(MCPeerID*)peer discoveryInfo:(NSDictionary*)discoveryInfo serviceType:(NSString*)servicetype withInvitationBlock:(invitationBlock)invitationBlock andError:(errorBlock)errorBlock{
+-(BOOL)startAdvertisingWithDiscoveryInfo:(NSDictionary*)discoveryInfo serviceType:(NSString*)servicetype withInvitationBlock:(invitationBlock)invitationBlock andError:(errorBlock)errorBlock{
     
     //Stopping the current advertisingEntity
     [self stopAdvertisingPeer];
@@ -185,15 +177,8 @@
         return NO;
     }
     
-    
-    //Detecting if there's peerID
-    if(!peer){
-        errorBlock([NSError errorWithDomain:@"PeerID cannot be nil" code:1 userInfo:nil]);
-        return NO;
-    }
-    
     //Initializing
-    _advertiserEntity = [[MCNearbyServiceAdvertiser alloc] initWithPeer:peer discoveryInfo:discoveryInfo serviceType:servicetype];
+    _advertiserEntity = [[MCNearbyServiceAdvertiser alloc] initWithPeer:self.session.myPeerID discoveryInfo:discoveryInfo serviceType:servicetype];
     
     //Setting delegate
     _advertiserEntity.delegate=self;
@@ -223,31 +208,5 @@
     
     //Accepting connection from peer
     invitationHandler(peerAccepted,self.session);
-}
-
-#pragma mark - MCSession Delegate
-// Remote peer changed state
-- (void)session:(MCSession *)session peer:(MCPeerID *)peerID didChangeState:(MCSessionState)state{
-    
-}
-
-// Received data from remote peer
-- (void)session:(MCSession *)session didReceiveData:(NSData *)data fromPeer:(MCPeerID *)peerID{
-    
-}
-
-// Received a byte stream from remote peer
-- (void)session:(MCSession *)session didReceiveStream:(NSInputStream *)stream withName:(NSString *)streamName fromPeer:(MCPeerID *)peerID{
-    
-}
-
-// Start receiving a resource from remote peer
-- (void)session:(MCSession *)session didStartReceivingResourceWithName:(NSString *)resourceName fromPeer:(MCPeerID *)peerID withProgress:(NSProgress *)progress{
-    
-}
-
-// Finished receiving a resource from remote peer and saved the content in a temporary location - the app is responsible for moving the file to a permanent location within its sandbox
-- (void)session:(MCSession *)session didFinishReceivingResourceWithName:(NSString *)resourceName fromPeer:(MCPeerID *)peerID atURL:(NSURL *)localURL withError:(NSError *)error{
-    
 }
 @end

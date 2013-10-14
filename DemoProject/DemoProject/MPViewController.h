@@ -7,7 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "MagicMP.h"
 @interface MPViewController : UIViewController
 
 @end
