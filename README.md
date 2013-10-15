@@ -42,4 +42,40 @@ The meaning of parameters are the following:
 __Note: MCNearbyServiceAdvertiser can be got from advertiserEntity property of mp object__
 
 ### Start browsing
-We can browse 
+We can browse in a similar way tat we advertise. With a MagicMP instance with delegate and session setup call the following method passing a block to be executed when user's been found or lost:
+```objective-c
+[mp startBrowsingWithServiceType:@"Data Transfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+        
+    } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+        
+    } andErrorBlock:^(NSError *error) {
+        
+    }];
+```
+* **ServiceType:**  is a short text string used to describe the app's networking protocol. It should be in the same format as a Bonjour service type: 1–15 characters long and valid characters include ASCII lowercase letters, numbers, and the hyphen. A short name that distinguishes itself from unrelated services is recommended; for example, a text chat app made by ABC company could use the service type "abc-txtchat". For more information about service types, read “Domain Naming Conventions”.
+* **userFound**: A block to be executed when a new advertiser user has been found
+* **userLost**: A block to be executed when a found user has been lost
+* **error**: A block to be executed if something strange happens
+
+#### Notes
+* You can now whenever you want the numver of currently found users through MagicMP property **foundAdvertisers**.
+* You can invite an user to your session through the MagicMP method:`-(BOOL)invitePeer:(MCPeerID*)peer withContext:(NSData*)context timeout:(NSTimeInterval)timeout;`
+
+### MCSession and delegate
+MCSession has always information about what's happening in the communication process. You can access it through property called **session** of MagicMP object. Delegate of session must be implemented by you to take control when something interesting happens in the session. Taken from the Apple's Docummentation the methods you should implement are the following:
+```objective-c
+– session:didReceiveData:fromPeer:  required method
+– session:didReceiveResourceAtURL:fromPeer:  required method
+– session:didReceiveStream:withName:fromPeer:  required method
+– session:peer:didChangeState:  required method
+– session:shouldAcceptCertificate:forPeer:  required method
+```
+**Note that all methods are required. More information [here](https://developer.apple.com/library/ios/documentation/MultipeerConnectivity/Reference/MCSessionDelegateRef/Reference/Reference.html)**
+
+#### Sending data and resources
+As you've access to session, it's easy to send data with following methods of [MCSession class](https://developer.apple.com/library/ios/documentation/MultipeerConnectivity/Reference/MCSessionClassRef/Reference/Reference.html):
+```objective-c
+– sendData:toPeers:withMode:error:
+– sendResourceAtURL:toPeer:withTimeout:completionHandler:
+– startStreamWithName:toPeer:error:
+```

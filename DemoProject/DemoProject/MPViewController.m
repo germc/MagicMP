@@ -32,6 +32,14 @@
         //Something bad happened
         NSLog(@"%@",error);
     }];
+    
+    [mp startBrowsingWithServiceType:@"Data Transfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+        
+    } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+        
+    } andErrorBlock:^(NSError *error) {
+        
+    }];
 }
 
 - (void)didReceiveMemoryWarning
