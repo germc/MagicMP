@@ -81,11 +81,19 @@
     _userLostBlock=userLost;
     
     //Detecting if the serviceType length is less than 15 characters
+    //Detecting if the serviceType has white spaces
     if (serviceType.length>15){
         errorBlock([NSError errorWithDomain:@"serviceType length should be 1-15 characters" code:1 userInfo:nil]);
         return NO;
     }
-    
+    if( [serviceType length] == 0 ||
+       !NSEqualRanges( [serviceType rangeOfString:@" "],
+                      NSMakeRange(NSNotFound, 0) ) )
+    {
+        errorBlock([NSError errorWithDomain:@"serviceType shouldn't have white spaces" code:1 userInfo:nil]);
+        return NO;
+    }
+
     //Initializing browser entity
     _browserEntity = [[MCNearbyServiceBrowser alloc] initWithPeer:self.session.myPeerID serviceType:serviceType];
     
@@ -174,6 +182,13 @@
     //Detecting if the serviceType length is less than 15 characters
     if (servicetype.length>15){
         errorBlock([NSError errorWithDomain:@"serviceType length should be 1-15 characters" code:1 userInfo:nil]);
+        return NO;
+    }
+    if( [servicetype length] == 0 ||
+       !NSEqualRanges( [servicetype rangeOfString:@" "],
+                      NSMakeRange(NSNotFound, 0) ) )
+    {
+        errorBlock([NSError errorWithDomain:@"serviceType shouldn't have white spaces" code:1 userInfo:nil]);
         return NO;
     }
     

@@ -23,6 +23,8 @@
 		3D166D3B18075CDE008D0924 /* MagicMPSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D166D3A18075CDE008D0924 /* MagicMPSpec.m */; };
 		3D166D3E18075E3D008D0924 /* MagicMP.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D166D3D18075E3D008D0924 /* MagicMP.m */; };
 		3D166D4018075EF8008D0924 /* MultipeerConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D166D3F18075EF8008D0924 /* MultipeerConnectivity.framework */; };
+		3D1ADC84180EABB20022057E /* MultipeerConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D166D3F18075EF8008D0924 /* MultipeerConnectivity.framework */; };
+		3DC8B9CB180EAAA700C5C641 /* MagicMP.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D166D3D18075E3D008D0924 /* MagicMP.m */; };
 		E3214AC840CB4DE596546D72 /* libPods-DemoProjectTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4908C8BAD7854DF3BEF4DDED /* libPods-DemoProjectTests.a */; };
 		F571A5FC606B4FCEB5D03E8C /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7B5AC6350AD4C819254E4BB /* libPods.a */; };
 /* End PBXBuildFile section */
@@ -71,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3D1ADC84180EABB20022057E /* MultipeerConnectivity.framework in Frameworks */,
 				3D166D0718075AA4008D0924 /* CoreGraphics.framework in Frameworks */,
 				3D166D0918075AA4008D0924 /* UIKit.framework in Frameworks */,
 				3D166D0518075AA4008D0924 /* Foundation.framework in Frameworks */,
@@ -348,6 +351,7 @@
 			files = (
 				3D166D1118075AA4008D0924 /* main.m in Sources */,
 				3D166D1B18075AA4008D0924 /* MPViewController.m in Sources */,
+				3DC8B9CB180EAAA700C5C641 /* MagicMP.m in Sources */,
 				3D166D1518075AA4008D0924 /* MPAppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -22,9 +22,10 @@ describe(@"MagicMP", ^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             discoveryInfo=@{@"Evironment":@"Test",@"DeviceType":@"iPhone"};
             serviceType=@"DataTransfer";
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            [mp startAdvertisingWithDiscoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:^(NSError *error) {
+                
             }];
             [mp stopAdvertisingPeer];
         });
@@ -42,11 +43,11 @@ describe(@"MagicMP", ^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             discoveryInfo=@{@"Evironment":@"Test",@"DeviceType":@"iPhone"};
             serviceType=@"DataTransfer";
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            [mp startAdvertisingWithDiscoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:^(NSError *error) {
+                
             }];
-
         });
         
         afterEach(^{
@@ -62,29 +63,23 @@ describe(@"MagicMP", ^{
         });
         it(@"should return error if serviceType is higher than 15 characters", ^{
             serviceType=@"HeeeeeeeeyyIamATestUserAham!";
-            BOOL started=[mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
-                return NO;
-            } andError:^(NSError *error) {
-            }];
-            [[theValue(started) should] equal:theValue(NO)];
-        });
-        it(@"should return error if there's no peer id", ^{
-            peer=nil;
-            BOOL started=[mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            BOOL started=[mp startAdvertisingWithDiscoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:^(NSError *error) {
             }];
             [[theValue(started) should] equal:theValue(NO)];
         });
         it(@"should not initialized if there's no error block passed",^{
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
+            [mp startAdvertisingWithDiscoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:^BOOL(MCPeerID *peerID, NSData *context) {
                 return NO;
             } andError:nil];
             [[[[MagicMP sharedMP] advertiserEntity] should] beNil];
         });
         
         it(@"should not initialized if there's no invitation block passed",^{
-            [mp startAdvertisingWithPeer:peer discoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:nil andError:nil];
+            [mp startAdvertisingWithDiscoveryInfo:discoveryInfo serviceType:serviceType withInvitationBlock:nil andError:^(NSError *error) {
+                
+            }];
             [[[[MagicMP sharedMP] advertiserEntity] should] beNil];
         });
         
@@ -109,12 +104,13 @@ describe(@"MagicMP", ^{
         beforeEach(^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             serviceType=@"DataTransfer";
-            [mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            [mp startBrowsingWithServiceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+                
             } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+                
             } andErrorBlock:^(NSError *error) {
                 
             }];
-
         });
         afterEach(^{
             [mp stopBrowsing];
@@ -133,7 +129,8 @@ describe(@"MagicMP", ^{
             [[theValue(mp.foundAdvertisers.count) should] equal:theValue(0)];
         });
         it(@"should fail if no UserFound block given",^{
-            BOOL started=[mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:nil UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+            BOOL started=[mp startBrowsingWithServiceType:@"DataTransfer" withUserFound:nil UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+                
             } andErrorBlock:^(NSError *error) {
                 
             }];
@@ -141,17 +138,9 @@ describe(@"MagicMP", ^{
         });
         
         it(@"should fail if no userLost block given",^{
-            BOOL started=[mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
-            } UserLost:nil andErrorBlock:^(NSError *error) {
+            BOOL started=[mp startBrowsingWithServiceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
                 
-            }];
-            [[theValue(started) should] equal:theValue(NO)];
-        });
-        
-        it(@"should fail if no peer given",^{
-            BOOL started=[mp startBrowsingWithPeer:nil serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
-            } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
-            } andErrorBlock:^(NSError *error) {
+            } UserLost:nil andErrorBlock:^(NSError *error) {
                 
             }];
             [[theValue(started) should] equal:theValue(NO)];
@@ -170,8 +159,10 @@ describe(@"MagicMP", ^{
         beforeEach(^{
             peer = [[MCPeerID alloc] initWithDisplayName:@"testPeer"];
             serviceType=@"DataTransfer";
-            [mp startBrowsingWithPeer:peer serviceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+            [mp startBrowsingWithServiceType:@"DataTransfer" withUserFound:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser, NSDictionary *discoveryInfo) {
+                
             } UserLost:^(MCPeerID *peerID, MCNearbyServiceBrowser *browser) {
+                
             } andErrorBlock:^(NSError *error) {
                 
             }];
