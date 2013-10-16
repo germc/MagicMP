@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <MultipeerConnectivity/MultipeerConnectivity.h>
+
 //Typedefs
 typedef void(^errorBlock)(NSError *error);
 typedef BOOL(^invitationBlock)(MCPeerID *peerID,NSData *context);
